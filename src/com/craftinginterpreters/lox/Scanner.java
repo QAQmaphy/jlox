@@ -2,7 +2,9 @@ package com.craftinginterpreters.lox;
 
 import static com.craftinginterpreters.lox.TokenType.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 class Scanner {
 
@@ -11,6 +13,29 @@ class Scanner {
     private int start = 0;
     private int current = 0;
     private int line = 1;
+
+    private static final Map<String, TokenType> keywords;
+
+    static {
+        keywords = new HashMap<>();
+        keywords.put("and", AND);
+        keywords.put("class", CLASS);
+        keywords.put("else", ELSE);
+        keywords.put("false", FALSE);
+        keywords.put("for", FOR);
+        keywords.put("fun", FUN);
+        keywords.put("if", IF);
+        keywords.put("nil", NIL);
+        keywords.put("or", OR);
+        keywords.put("print", PRINT);
+        keywords.put("return", RETURN);
+        keywords.put("super", SUPER);
+        keywords.put("this", THIS);
+        keywords.put("true", TRUE);
+        keywords.put("var", VAR);
+        keywords.put("while", WHILE);
+
+    }
 
     Scanner(String source) {
         this.source = source;
@@ -47,49 +72,35 @@ class Scanner {
     private void scanToken() {
         char c = advance();
         switch (c) {
-            case '(':
+            case '(' ->
                 addToken(LEFT_PAREN);
-                break;
-            case ')':
+            case ')' ->
                 addToken(RIGHT_PAREN);
-                break;
-            case '{':
+            case '{' ->
                 addToken(LEFT_BRACE);
-                break;
-            case '}':
+            case '}' ->
                 addToken(RIGHT_BRACE);
-                break;
-            case ',':
+            case ',' ->
                 addToken(COMMA);
-                break;
-            case '.':
+            case '.' ->
                 addToken(DOT);
-                break;
-            case '-':
+            case '-' ->
                 addToken(MINUS);
-                break;
-            case '+':
+            case '+' ->
                 addToken(PLUS);
-                break;
-            case ';':
+            case ';' ->
                 addToken(SEMICOLON);
-                break;
-            case '*':
+            case '*' ->
                 addToken(STAR);
-                break;
-            case '!':
+            case '!' ->
                 addToken(match('=') ? BANG_EQUAL : BANG);
-                break;
-            case '=':
+            case '=' ->
                 addToken(match('=') ? EQUAL_EQUAL : EQUAL);
-                break;
-            case '<':
+            case '<' ->
                 addToken(match('=') ? LESS_EQUAL : LESS);
-                break;
-            case '>':
+            case '>' ->
                 addToken(match('=') ? GREATER_EQUAL : GREATER);
-                break;
-            case '/':
+            case '/' -> {
                 //如果发现下一个字符还是/,就说明这是一行注释,不断循环一直到有换行符或是到达文件末尾
                 if (match('/')) {
                     while (peek() != '\n' && !isAtEnd()) {
@@ -99,24 +110,64 @@ class Scanner {
                 } else {
                     addToken(SLASH);
                 }
-                break;
-            case ' ':
-            case '\r':
-            case '\t':
-                break;
-            case '\n':
+            }
+            case ' ', '\r', '\t' -> {
+            }
+            case '\n' ->
                 line++;
-                break;
-
-            case '"':
+            case '"' ->
                 string();
-                break;
+            default -> {
+                if (isDigit(c)) {
+                    number();
+                } else if (isAlpha(c)) {
+                    identifier();
 
-            default:
-                Lox.error(line, "Unexpected charcter.");
-                break;
+                } else {
+                    Lox.error(line, "Unexpected charcter.");
+                }
+            }
         }
 
+    }
+
+    private void identifier() {
+        while (isAlphaNumeric(peek())) {
+            advance();
+        }
+
+        String text = source.substring(start, current);
+        TokenType type = keywords.get(text);
+        if (type == null) {
+            type = IDENTIFIER;
+        }
+        addToken(type);
+
+    }
+
+    private boolean isAlpha(char c) {
+        return (c >= 'a' && c <= 'z')
+                || (c >= 'A' && c <= 'Z')
+                || c == '_';
+    }
+
+    private boolean isAlphaNumeric(char c) {
+        return isAlpha(c) || isDigit(c);
+    }
+
+    @SuppressWarnings("UnnecessaryTemporaryOnConversionFromString")
+    private void number() {
+        while (isDigit(peek())) {
+            advance();
+        }
+        if (peek() == '.' && isDigit(peekNext())) {
+            advance();
+            while (isDigit(peek())) {
+                advance();
+            }
+        }
+
+        addToken(NUMBER, Double.parseDouble(source.substring(start, current)));
     }
 
     private void string() {
@@ -136,7 +187,7 @@ class Scanner {
 
         }
         advance();
-
+        //去掉引号作为转义后的值
         String value = source.substring(start + 1, current - 1);
         addToken(STRING, value);
     }
@@ -159,5 +210,16 @@ class Scanner {
             return '\0';
         }
         return source.charAt(current);
+    }
+
+    private char peekNext() {
+        if (current + 1 >= source.length()) {
+            return '\0';
+        }
+        return source.charAt(current + 1);
+    }
+
+    private boolean isDigit(char c) {
+        return c >= '0' && c <= '9';
     }
 }
