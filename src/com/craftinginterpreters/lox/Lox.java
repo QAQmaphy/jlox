@@ -10,7 +10,9 @@ import java.util.List;
 
 public class Lox {
 
+    private static final Interpreter interpreter = new Interpreter();
     static boolean hadError = false;
+    static boolean hadRuntimeError = false;
 
     public static void main(String[] args) throws IOException {
         if (args.length > 1) {
@@ -31,6 +33,9 @@ public class Lox {
         //确定是否出错
         if (hadError) {
             System.exit(65);
+        }
+        if (hadRuntimeError) {
+            System.exit(70);
         }
     }
 
@@ -60,7 +65,7 @@ public class Lox {
         if (hadError) {
             return;
         }
-        System.out.println(new AstPrinter().print(expression));
+        interpreter.interpret(expression);
 
     }
 //为什么这里要嵌套一层
@@ -68,6 +73,11 @@ public class Lox {
     static void error(int line, String message) {
         report(line, "", message);
 
+    }
+
+    static void runtimeError(RuntimeError error) {
+        System.err.println(error.getMessage() + "\n[line]" + error.token.line + "]");
+        hadRuntimeError = true;
     }
 
     static void error(Token token, String message) {
