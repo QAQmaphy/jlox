@@ -16,7 +16,7 @@ class Parser {
     }
 
     private Expr expression() {
-        return equality();
+        return assignment();
     }
 
     private Stmt declaration() {
@@ -35,7 +35,29 @@ class Parser {
         if (match(PRINT)) {
             return printStatement();
         }
+        if (match(LEFT_BRACE)) {
+            return new Stmt.Block(block());
+        }
         return expressionStatement();
+    }
+
+    private Expr assignment() {
+        //这一步除了if里的东西之外,就是之前的东西
+        Expr expr = equality();
+        if (match(EQUAL)) {
+            Token equals = previous();
+            //递归调用来保证右结合
+            Expr value = assignment();
+            //判断是不是合法的可赋值左值
+            if (expr instanceof Expr.Variable) {
+                Token name = ((Expr.Variable) expr).name;
+                return new Expr.Assign(name, value);
+                //返回新的表达式节点,表示重新赋值
+            }
+            error(equals, "Invalid assignment target.");
+
+        }
+        return expr;
     }
 
     private Stmt printStatement() {
@@ -63,6 +85,16 @@ class Parser {
         Expr expr = expression();
         consume(SEMICOLON, "Expect ';' after expression.");
         return new Stmt.Expression(expr);
+    }
+
+    private List<Stmt> block() {
+        List<Stmt> statements = new ArrayList<>();
+        while (!check(RIGHT_BRACE) && !isAtEnd()) {
+            statements.add(declaration());
+
+        }
+        consume(RIGHT_BRACE, "Expect '}' after block.");
+        return statements;
     }
 
     private Expr equality() {
@@ -215,6 +247,11 @@ class Parser {
             advance();
         }
     }
+//这里正式调用解析器,在一个循环中不断地将解析出的语句填入到一个语句列表中,在解析的过程中会
+//有这些情况:1.判断出了var赋值语句,将标识符进行消费,然后匹配一个等号,然后继续将后面的表达式的值求出来,
+//消费掉最后的分号;,用标识符和后面的表达式节点构造一个赋值语句节点
+//2.判断到了print,大体上和1的情况类似
+//3.不是上面两种情况,说明是一个表达式,直接解析出一个表达式
 
     List<Stmt> parse() {
         List<Stmt> statements = new ArrayList<>();
