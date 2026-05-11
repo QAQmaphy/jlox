@@ -166,7 +166,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         try {
             this.environment = environment;
             //更新当前块的环境
-            for (Stmt statement : statemnets) {
+            for (Stmt statement : statements) {
                 execute(statement);
 
             }

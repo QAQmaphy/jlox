@@ -2,76 +2,76 @@
 
 Lox 编程语言的 Java 实现，参考 Robert Nystrom 的著作 [Crafting Interpreters](https://craftinginterpreters.com/)。
 
+采用递归下降解析 + 树遍历求值的经典解释器架构。
+
 ## 常用命令
 
 ```bash
 # 生成 AST 类（修改 GenerateAst.java 后需要运行）
 ./gen.sh
 
-# 运行 Lox 解释器
-./run.sh [script.lox]
-
-# 编译所有源文件
-javac -d out src/com/craftinginterpreters/lox/*.java
-
-# 运行 REPL（交互式）
-java -cp out com.craftinginterpreters.lox.Lox
-
 # 运行脚本
-java -cp out com.craftinginterpreters.lox.Lox script.lox
+./run.sh script.lox
+
+# REPL 交互模式
+./run.sh
+
+# 手动编译
+javac -d out src/com/craftinginterpreters/lox/*.java
 ```
 
-## 项目结构
+## 架构概览
 
 ```
-src/com/craftinginterpreters/lox/
-├── Lox.java         # 主程序入口，支持 REPL 和脚本执行
-├── Scanner.java     # 词法分析器，将源码转换为 Token 序列（第4章）
-├── Token.java       # Token 数据结构
-├── TokenType.java   # Token 类型枚举
-├── Expr.java        # AST 表达式节点（自动生成，使用 Visitor 模式）
-├── AstPrinter.java  # 语法树打印程序（调试用）
-├── Parser.java      # 递归下降解析器，含恐慌模式错误恢复（第6章）
-├── Interpreter.java # 表达式求值器（第7章）
-└── RuntimeError.java # 运行时错误
-
-src/com/craftinginterpreters/tool/
-└── GenerateAst.java # AST 代码生成工具
+源码 (String) → Scanner → Token[] → Parser → Stmt[] (AST) → Interpreter → 求值结果
 ```
+
+- **Scanner**（词法分析）: 将源码字符串转换为 Token 序列
+- **Parser**（语法分析）: 递归下降解析，将 Token 序列构建为 AST
+- **Interpreter**（解释求值）: 遍历 AST 执行语句和求值表达式
+- **Environment**: 静态作用域，通过链式结构实现嵌套环境
+
+AST 节点（`Expr.java`、`Stmt.java`）由 `GenerateAst.java` 自动生成，使用 Visitor 模式。
 
 ## 完成进度
 
 | 章节 | 内容 | 状态 |
 |------|------|------|
-| 第4章 | 词法分析（Scanner） | ✅ 已完成 |
-| 第6章 | 语法分析（Parser） | ✅ 已完成 |
-| 第7章 | 表达式求值（Interpreter） | ✅ 已完成 |
-| 第8章 | 语句和状态 | ⬜ 待实现 |
-| 第9章 | 控制流 | ⬜ 待实现 |
-| 第10章 | 函数 | ⬜ 待实现 |
-| 第11章 | 变量解析 | ⬜ 待实现 |
-| 第12章 | 类 | ⬜ 待实现 |
-| 第13章 | 继承 | ⬜ 待实现 |
+| 第4章 | 词法分析（Scanner） | ✅ |
+| 第6章 | 语法分析（Parser） | ✅ |
+| 第7章 | 表达式求值 | ✅ |
+| 第8章 | 语句和状态（变量、赋值、print） | ✅ |
+| 第9-10章 | 作用域 | ✅ |
+| 第11章 | 控制流 | ⬜ |
+| 第12章 | 函数 | ⬜ |
+| 第13章 | 类 | ⬜ |
 
 ## 目前支持的功能
 
-- 词法分析：识别关键字、标识符、数字、字符串、运算符等所有 Token 类型
-- 语法分析：支持二元运算（`+` `-` `*` `/` `==` `!=` `<` `>` `<=` `>=`）、一元运算（`!` `-`）、分组 `()`、字面量
-- 运算符优先级：通过递归下降函数嵌套隐式处理
-- 错误恢复：恐慌模式（Panic Mode），一次运行可报告多个语法错误
-- AST 可视化：通过 AstPrinter 打印语法树结构
-- **表达式求值（第7章）**：支持字面量、分组、一元/二元表达式的递归树形求值
-  - 算术运算：`+` `-` `*` `/`
-  - 比较运算：`>` `>=` `<` `<=` `==` `!=`
-  - 逻辑非：`!`
-  - 一元负号：`-`
-  - 字符串拼接：`"hello" + " world"`
-  - **运行时错误**：对非数字类型使用算术/比较运算符时抛出错误
-  - **求值策略**：递归树形遍历，`evaluate()` 通过 Visitor 模式沿 AST 向下分发，`visitGroupingExpr` → `evaluate(expr.expression)` 传入子节点而非当前节点，确保每层递归走向树的下层而非原地循环
+- **表达式**: 算术（`+ - * /`）、比较（`> >= < <=`）、相等（`== !=`）、逻辑非（`!`）、一元负号（`-`）、字符串拼接
+- **语句**: `var` 声明和初始化、赋值、`print`、表达式语句
+- **作用域**: 块 `{}` 创建嵌套作用域，变量遮蔽，内层可访问外层变量
+- **错误处理**: 语法错误恐慌模式恢复 + 运行时错误定位
 
-## 编译输出
+## 项目结构
 
-编译输出到 `out/` 目录。
+```
+src/com/craftinginterpreters/lox/
+├── Lox.java          # 入口，协调全流程、错误管理
+├── Scanner.java      # 词法分析
+├── Token.java        # Token 数据结构
+├── TokenType.java    # Token 类型枚举
+├── Expr.java         # AST 表达式节点（自动生成）
+├── Stmt.java         # AST 语句节点（自动生成）
+├── Parser.java       # 递归下降解析器
+├── Interpreter.java  # 树遍历解释器
+├── Environment.java  # 作用域环境（链式）
+├── AstPrinter.java   # AST 打印（调试）
+└── RuntimeError.java # 运行时异常
+
+src/com/craftinginterpreters/tool/
+└── GenerateAst.java  # AST 代码生成工具
+```
 
 ## 参考资料
 
