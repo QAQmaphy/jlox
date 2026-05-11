@@ -1,6 +1,6 @@
 # jlox
 
-Lox 编程语言的 Java 实现，参考 Robert Nystrom 的著作 [Crafting Interpreters](https://craftinginterpreters.com/)。
+Lox 编程语言的 Java 实现，参考 Robert Nystrom 的著作 [Crafting Interpreters](https://zaslee.github.io/craftinginterpreters/contents.html)。
 
 采用递归下降解析 + 树遍历求值的经典解释器架构。
 
@@ -75,4 +75,4 @@ src/com/craftinginterpreters/tool/
 
 ## 参考资料
 
-- [Crafting Interpreters](https://craftinginterpreters.com/)
+- [Crafting Interpreters](https://zaslee.github.io/craftinginterpreters/contents.html)
