@@ -32,6 +32,9 @@ class Parser {
     }
 
     private Stmt statement() {
+        if (match(IF)) {
+            return ifStatement();
+        }
         if (match(PRINT)) {
             return printStatement();
         }
@@ -41,7 +44,26 @@ class Parser {
         return expressionStatement();
     }
 
+    private Stmt ifStatement() {
+        //找后面的左括号
+        consume(LEFT_PAREN, "Expect '(' after 'if'.");
+
+        Expr condition = expression();
+
+        consume(RIGHT_PAREN, "Expect ')' after 'if'.");
+
+        Stmt thenBranch = statement();
+
+        Stmt elseBranch = null;
+        if (match(ELSE)) {
+            elseBranch = statement();
+        }
+        return new Stmt.If(condition, thenBranch, elseBranch);
+
+    }
+
     private Expr assignment() {
+
         //这一步除了if里的东西之外,就是之前的东西
         Expr expr = equality();
         if (match(EQUAL)) {
