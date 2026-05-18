@@ -1,6 +1,7 @@
 package com.craftinginterpreters.lox;
 
 import static com.craftinginterpreters.lox.TokenType.*;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,6 +36,10 @@ class Parser {
         if (match(IF)) {
             return ifStatement();
         }
+        if(match(FOR))
+        {
+          return forStatement();
+        }
         if (match(PRINT)) {
             return printStatement();
         }
@@ -44,6 +49,12 @@ class Parser {
         return expressionStatement();
     }
 
+    private Stmt forStatement()
+    {
+      consume(LEFT_PAREN,"Expect '(' after 'for'.");
+      
+
+    }
     private Stmt ifStatement() {
         //找后面的左括号
         consume(LEFT_PAREN, "Expect '(' after 'if'.");
@@ -71,7 +82,7 @@ class Parser {
             //递归调用来保证右结合
             Expr value = assignment();
             //判断是不是合法的可赋值左值
-            if (expr instanceof Expr.Variable) {
+
                 Token name = ((Expr.Variable) expr).name;
                 return new Expr.Assign(name, value);
                 //返回新的表达式节点,表示重新赋值
