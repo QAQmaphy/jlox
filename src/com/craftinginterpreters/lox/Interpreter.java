@@ -12,11 +12,6 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
                 execute(statement);
             }
 
-
-Most modern languages have a higher-level looping statement for iterating over arbitrary user-defined sequences. C# has foreach, Java has “enhanced for”, even C++ has range-based for statements now. Those offer cleaner syntax than C’s for statement by implicitly calling into an iteration protocol that the object being looped over supports. 大多数现代语言都有高级循环语句，用于迭代用户定义的任意序列。C# 有 foreach，Java 有 “enhanced for”，甚至 C++ 现在也有基于范围的 for 语句。这些语句通过隐式调用被循环对象所支持的迭代协议，提供了比 C 的 for 语句更简洁的语法。
-
-I love those. For Lox, though, we’re limited by building up the interpreter a chapter at a time. We don’t have objects and methods yet, so we have no way of defining an iteration protocol that the for loop could use. So we’ll stick with the old school C for loop. Think of it as “vintage”. The fixie of control flow statements. 我喜欢这些语句。不过，对于 Lox 来说，我们只能一次一章地建立解释器。我们还没有对象和方法，因此无法定义 for 循环可以使用的迭代协议。因此，我们将坚持使用老式的 C for 循环。把它想象成 “老古董“。控制流语句的 “老古董“。
-
         } catch (RuntimeError error) {
             Lox.runtimeError(error);
         }
