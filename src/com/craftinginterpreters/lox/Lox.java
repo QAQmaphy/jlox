@@ -23,14 +23,13 @@ public class Lox {
         } else {
             runPrompt();
         }
-
     }
 
     private static void runFile(String path) throws IOException {
         byte[] bytes = Files.readAllBytes(Paths.get(path));
         run(new String(bytes, Charset.defaultCharset()));
 
-        //确定是否出错
+        // 确定是否出错
         if (hadError) {
             System.exit(65);
         }
@@ -40,17 +39,17 @@ public class Lox {
     }
 
     private static void runPrompt() throws IOException {
-        //这里用了什么方式来读取命令
+        // 这里用了什么方式来读取命令
         InputStreamReader input = new InputStreamReader(System.in);
         BufferedReader reader = new BufferedReader(input);
-        for (;;) {
+        for (; ; ) {
             System.out.print(">");
             String line = reader.readLine();
             if (line == null) {
                 break;
             }
             run(line);
-            //就算用户输入有错误,也不能中断整个会话,因此我们要重置该标志
+            // 就算用户输入有错误,也不能中断整个会话,因此我们要重置该标志
             hadError = false;
         }
     }
@@ -66,13 +65,12 @@ public class Lox {
             return;
         }
         interpreter.interpret(statements);
-
     }
-//为什么这里要嵌套一层
+
+    // 为什么这里要嵌套一层
 
     static void error(int line, String message) {
         report(line, "", message);
-
     }
 
     static void runtimeError(RuntimeError error) {
@@ -90,10 +88,7 @@ public class Lox {
     }
 
     private static void report(int line, String where, String message) {
-        System.err.println(
-                "[line " + line + "] Error" + where + ": " + message
-        );
+        System.err.println("[line " + line + "] Error" + where + ": " + message);
         hadError = true;
     }
-
 }
