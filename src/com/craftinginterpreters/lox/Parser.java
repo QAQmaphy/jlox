@@ -1,14 +1,15 @@
 package com.craftinginterpreters.lox;
 
 import static com.craftinginterpreters.lox.TokenType.*;
-import java.util.Arrays;
+
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 class Parser {
 
-    private static class ParseError extends RuntimeException {
-    }
+    private static class ParseError extends RuntimeException {}
+
     private final List<Token> tokens;
     private int current = 0;
 
@@ -84,34 +85,27 @@ class Parser {
 
         Stmt body = statement();
 
-        //先对递增语句进行处理，非空的话就将递归语句加在循环体的下面
-        //这样来构造出一个有递增条件的循环体。
+        // 先对递增语句进行处理，非空的话就将递归语句加在循环体的下面
+        // 这样来构造出一个有递增条件的循环体。
         if (increment != null) {
-            body = new Stmt.Block(
-                    Arrays.asList(
-                            body,
-                            new Stmt.Expression(increment)
-                    )
-            )
+            body = new Stmt.Block(Arrays.asList(body, new Stmt.Expression(increment)));
         }
-        //若条件表达式是null，表示这是一个死循环，直接设置为true
+        // 若条件表达式是null，表示这是一个死循环，直接设置为true
         if (condition == null) {
             condition = new Expr.Literal(true);
         }
 
-        //将条件表达式和循环体构造成一个while
+        // 将条件表达式和循环体构造成一个while
         body = new Stmt.While(condition, body);
-        //如果有初始化语句的话，就在while语句前执行一次
+        // 如果有初始化语句的话，就在while语句前执行一次
         if (initializer != null) {
             body = new Stmt.Block(Arrays.asList(initializer, body));
-
         }
         return body;
-
     }
 
     private Stmt ifStatement() {
-        //找后面的左括号
+        // 找后面的左括号
         consume(LEFT_PAREN, "Expect '(' after 'if'.");
 
         Expr condition = expression();
@@ -125,25 +119,23 @@ class Parser {
             elseBranch = statement();
         }
         return new Stmt.If(condition, thenBranch, elseBranch);
-
     }
 
     private Expr assignment() {
 
-        //这一步除了if里的东西之外,就是之前的东西
+        // 这一步除了if里的东西之外,就是之前的东西
         Expr expr = equality();
         if (match(EQUAL)) {
             Token equals = previous();
-            //递归调用来保证右结合
+            // 递归调用来保证右结合
             Expr value = assignment();
-            //判断是不是合法的可赋值左值
+            // 判断是不是合法的可赋值左值
             if (expr instanceof Expr.Variable) {
                 Token name = ((Expr.Variable) expr).name;
                 return new Expr.Assign(name, value);
-                //返回新的表达式节点,表示重新赋值
+                // 返回新的表达式节点,表示重新赋值
             }
             error(equals, "Invalid assignment target.");
-
         }
         return expr;
     }
@@ -155,17 +147,17 @@ class Parser {
     }
 
     private Stmt varDeclaration() {
-        //标识符(变量)的名字
+        // 标识符(变量)的名字
         Token name = consume(IDENTIFIER, "Expect variable name.");
 
         Expr initializer = null;
-        //检测到=后,把后面表达式的值赋给表达式变量
+        // 检测到=后,把后面表达式的值赋给表达式变量
         if (match(EQUAL)) {
             initializer = expression();
         }
 
         consume(SEMICOLON, "Expect ';' after variable declaration.");
-        //将该表达式和标识符进行绑定
+        // 将该表达式和标识符进行绑定
         return new Stmt.Var(name, initializer);
     }
 
@@ -179,7 +171,6 @@ class Parser {
         List<Stmt> statements = new ArrayList<>();
         while (!check(RIGHT_BRACE) && !isAtEnd()) {
             statements.add(declaration());
-
         }
         consume(RIGHT_BRACE, "Expect '}' after block.");
         return statements;
@@ -204,7 +195,6 @@ class Parser {
             Token operator = previous();
             Expr right = term();
             expr = new Expr.Binary(expr, operator, right);
-
         }
         return expr;
     }
@@ -216,7 +206,6 @@ class Parser {
             Token operator = previous();
             Expr right = factor();
             expr = new Expr.Binary(expr, operator, right);
-
         }
         return expr;
     }
@@ -238,7 +227,35 @@ class Parser {
             Expr right = unary();
             return new Expr.Unary(operator, right);
         }
-        return primary();
+        return call();
+    }
+
+    private Expr call() {
+        Expr expr = primary();
+
+        while (true) {
+            if (match(LEFT_PAREN)) {
+                expr = finishCall(expr);
+            } else {
+                break;
+            }
+        }
+        return expr;
+    }
+
+    private Expr finishCall(Expr callee) {
+        List<Expr> arguments = new ArrayList<>();
+        if (!check(RIGHT_PAREN)) {
+            do {
+                if (arguments.size() >= 255) {
+                    error(peek(), "Can't have more than 255 arguments.");
+                }
+                arguments.add(expression());
+            } while (match(COMMA));
+        }
+        Token paren = consume(RIGHT_PAREN, "Expect ')' after arguments.");
+
+        return new Expr.Call(callee, paren, arguments);
     }
 
     private Expr primary() {
@@ -316,10 +333,10 @@ class Parser {
     }
 
     private void synchronize() {
-        //先消费掉一个token
+        // 先消费掉一个token
         advance();
 
-        //不断进行循环来消费接下来的token,直到同步点
+        // 不断进行循环来消费接下来的token,直到同步点
         while (!isAtEnd()) {
             if (previous().type == SEMICOLON) {
                 return;
@@ -329,23 +346,22 @@ class Parser {
                 case CLASS, FUN, VAR, IF, WHILE, PRINT, RETURN -> {
                     return;
                 }
-
             }
 
             advance();
         }
     }
-//这里正式调用解析器,在一个循环中不断地将解析出的语句填入到一个语句列表中,在解析的过程中会
-//有这些情况:1.判断出了var赋值语句,将标识符进行消费,然后匹配一个等号,然后继续将后面的表达式的值求出来,
-//消费掉最后的分号;,用标识符和后面的表达式节点构造一个赋值语句节点
-//2.判断到了print,大体上和1的情况类似
-//3.不是上面两种情况,说明是一个表达式,直接解析出一个表达式
+
+    // 这里正式调用解析器,在一个循环中不断地将解析出的语句填入到一个语句列表中,在解析的过程中会
+    // 有这些情况:1.判断出了var赋值语句,将标识符进行消费,然后匹配一个等号,然后继续将后面的表达式的值求出来,
+    // 消费掉最后的分号;,用标识符和后面的表达式节点构造一个赋值语句节点
+    // 2.判断到了print,大体上和1的情况类似
+    // 3.不是上面两种情况,说明是一个表达式,直接解析出一个表达式
 
     List<Stmt> parse() {
         List<Stmt> statements = new ArrayList<>();
         while (!isAtEnd()) {
             statements.add(declaration());
-
         }
         return statements;
     }

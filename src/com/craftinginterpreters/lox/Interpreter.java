@@ -1,5 +1,6 @@
 package com.craftinginterpreters.lox;
 
+import java.util.ArrayList;
 import java.util.List;
 
 class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
@@ -36,7 +37,6 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             }
         }
         return evaluate(expr.right);
-
     }
 
     @Override
@@ -70,29 +70,24 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         Object right = evaluate(expr.right);
 
         switch (expr.operator.type) {
-
             case GREATER -> {
                 checkNumberOperand(expr.operator, left, right);
                 return (double) left > (double) right;
-
             }
 
             case GREATER_EQUAL -> {
                 checkNumberOperand(expr.operator, left, right);
 
                 return (double) left >= (double) right;
-
             }
             case LESS -> {
                 checkNumberOperand(expr.operator, left, right);
 
                 return (double) left < (double) right;
-
             }
             case LESS_EQUAL -> {
                 checkNumberOperand(expr.operator, left, right);
                 return (double) left <= (double) right;
-
             }
             case BANG_EQUAL -> {
                 return !isEqual(left, right);
@@ -111,8 +106,8 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
                 if (left instanceof String && right instanceof String) {
                     return (String) left + (String) right;
                 }
-                throw new RuntimeError(expr.operator, "Operands must be two numbers or two strings");
-
+                throw new RuntimeError(
+                        expr.operator, "Operands must be two numbers or two strings");
             }
             case SLASH -> {
                 checkNumberOperand(expr.operator, left, right);
@@ -122,10 +117,23 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
                 checkNumberOperand(expr.operator, left, right);
                 return (double) left * (double) right;
             }
-
         }
 
         return null;
+    }
+
+    @Override
+    public Object visitCallExpr(Expr.Call expr) {
+        Object callee = evaluate(expr.callee);
+
+        List<Object> arguments = new ArrayList<>();
+        for (Expr argument : expr.arguments) {
+            arguments.add(evaluate(argument));
+        }
+        // 将标识符转换成可执行的函数
+        LoxCallable function = (LoxCallable) callee;
+
+        return function.call(this, arguments);
     }
 
     private void checkNumberOperand(Token operator, Object left, Object right) {
@@ -138,7 +146,6 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     private void checkNumberOperand(Token operator, Object operand) {
         if (operand instanceof Double) {
             return;
-
         }
         throw new RuntimeError(operator, "operand must be a bunber.");
     }
@@ -178,19 +185,18 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     }
 
     void executeBlock(List<Stmt> statements, Environment environment) {
-        //保存当前的环境
+        // 保存当前的环境
         Environment previous = this.environment;
 
         try {
             this.environment = environment;
-            //更新当前块的环境
+            // 更新当前块的环境
             for (Stmt statement : statements) {
                 execute(statement);
-
             }
         } finally {
             this.environment = previous;
-            //恢复环境
+            // 恢复环境
         }
     }
 
@@ -224,7 +230,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         if (stmt.initializer != null) {
             value = evaluate(stmt.initializer);
         }
-        //在环境中添加一个全局变量
+        // 在环境中添加一个全局变量
         environment.define(stmt.name.lexeme, value);
         return null;
     }
