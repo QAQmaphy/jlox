@@ -9,6 +9,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     private Environment environment = globals;
 
+    //在创建一个解释器的时候，将一个时钟加入到全局环境中
     Interpreter(){
         globals.define("clock",new LoxCallable(){
             @Override
@@ -235,6 +236,13 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         return null;
     }
 
+    @Override
+    public Void visitFunctionStmt(Stmt.Function stmt)
+    {
+        LoxFunction function = new LoxFunction(stmt);
+        environment.define(stmt.name.lexeme,function);
+        return null;
+    }
     @Override
     public Void visitIfStmt(Stmt.If stmt) {
         if (isTruthy(evaluate(stmt.condition))) {
