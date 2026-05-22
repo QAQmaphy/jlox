@@ -47,6 +47,10 @@ class Parser {
         if (match(PRINT)) {
             return printStatement();
         }
+        if(match(RETURN))
+        {
+            return returnStatement();
+        }
         if(match(WHILE))
         {
             return whileStatement();
@@ -172,6 +176,17 @@ private Stmt printStatement() {
     return new Stmt.Print(value);
 }
 
+private Stmt returnStatemnet()
+{
+    Token keyword = previous();
+    Expr value = null;
+    if(!check(SEMICOLON))
+    {
+        value = expression();
+    }
+    consume(SEMICOLON,"Expect ';' after return value");
+    return new Stmt.Return(keyword,value);
+}
 private Stmt varDeclaration() {
     //标识符(变量)的名字
     Token name = consume(IDENTIFIER, "Expect variable name.");
