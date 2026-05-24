@@ -64,6 +64,11 @@ public class Lox {
         if (hadError) {
             return;
         }
+        // 先进行语义分析解析变量绑定
+        Resolver resolver = new Resolver(interpreter);
+        resolver.resolve(statements);
+        // 如果在解析变量的时候存在错误,就要跳过解释器
+        if (hadError) return;
         interpreter.interpret(statements);
     }
 

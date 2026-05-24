@@ -1,7 +1,9 @@
 package com.craftinginterpreters.lox;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
@@ -9,22 +11,30 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     private Environment environment = globals;
 
-    //在创建一个解释器的时候，将一个时钟加入到全局环境中
-    Interpreter(){
-        globals.define("clock",new LoxCallable(){
-            @Override
-            public int arity(){return 0;}
+    private final Map<Expr, Integer> locals = new HashMap<>();
 
-            @Override 
-            public Object call(Interpreter interpreter,
-                                List<Object> arguments)
-            {
-                return (double)System.currentTimeMillis() /1000.0;
-            }
-            @Override
-            public String toString(){return "<native fn>";}
-        });
+    // 在创建一个解释器的时候，将一个时钟加入到全局环境中
+    Interpreter() {
+        globals.define(
+                "clock",
+                new LoxCallable() {
+                    @Override
+                    public int arity() {
+                        return 0;
+                    }
+
+                    @Override
+                    public Object call(Interpreter interpreter, List<Object> arguments) {
+                        return (double) System.currentTimeMillis() / 1000.0;
+                    }
+
+                    @Override
+                    public String toString() {
+                        return "<native fn>";
+                    }
+                });
     }
+
     void interpret(List<Stmt> statements) {
         try {
             for (Stmt statement : statements) {
@@ -35,6 +45,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             Lox.runtimeError(error);
         }
     }
+
     @Override
     public Object visitLiteralExpr(Expr.Literal expr) {
         return expr.value;
@@ -78,7 +89,17 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     @Override
     public Object visitVariableExpr(Expr.Variable expr) {
-        return environment.get(expr.name);
+        return lookUpVariable(expr.name, expr);
+    }
+
+    private Object lookUpVariable(Token name, Expr expr) {
+        Integer distance = locals.get(expr);
+        if (distance != null) {
+            return environment.getAt(distance, name.lexeme);
+
+        } else {
+            return globals.get(name);
+        }
     }
 
     @Override
@@ -147,20 +168,19 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         for (Expr argument : expr.arguments) {
             arguments.add(evaluate(argument));
         }
-        if(!(callee instanceof LoxCallable))
-        {
-            throw new RuntimeError(
-                    expr.paren,
-                    "Can only call functions and classes."
-                    );
+        if (!(callee instanceof LoxCallable)) {
+            throw new RuntimeError(expr.paren, "Can only call functions and classes.");
         }
         // 将标识符转换成可执行的函数
         LoxCallable function = (LoxCallable) callee;
-        if(arguments.size() != function.arity())
-        {
-            throw new RuntimeError(expr.paren,"Expected "+
-                    functions.arity()+ " arguments but got "+
-                    arguments.size() + ".");
+        if (arguments.size() != function.arity()) {
+            throw new RuntimeError(
+                    expr.paren,
+                    "Expected "
+                            + function.arity()
+                            + " arguments but got "
+                            + arguments.size()
+                            + ".");
         }
 
         return function.call(this, arguments);
@@ -177,7 +197,7 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         if (operand instanceof Double) {
             return;
         }
-        throw new RuntimeError(operator, "operand must be a bunber.");
+        throw new RuntimeError(operator, "Operand must be a number.");
     }
 
     private boolean isEqual(Object a, Object b) {
@@ -206,6 +226,10 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     private void execute(Stmt stmt) {
         stmt.accept(this);
+    }
+
+    void resolve(Expr expr, int depth) {
+        locals.put(expr, depth);
     }
 
     @Override
@@ -237,12 +261,12 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     }
 
     @Override
-    public Void visitFunctionStmt(Stmt.Function stmt)
-    {
-        LoxFunction function = new LoxFunction(stmt,environment);
-        environment.define(stmt.name.lexeme,function);
+    public Void visitFunctionStmt(Stmt.Function stmt) {
+        LoxFunction function = new LoxFunction(stmt, environment);
+        environment.define(stmt.name.lexeme, function);
         return null;
     }
+
     @Override
     public Void visitIfStmt(Stmt.If stmt) {
         if (isTruthy(evaluate(stmt.condition))) {
@@ -261,14 +285,13 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         return null;
     }
 
-    @Override 
-    public Void visitReturnStmt(Stmt.Return stmt)
-    {
+    @Override
+    public Void visitReturnStmt(Stmt.Return stmt) {
         Object value = null;
-        if(stmt.value != null)
-            value = evaluate(stmt.value);
+        if (stmt.value != null) value = evaluate(stmt.value);
         throw new Return(value);
     }
+
     @Override
     public Void visitVarStmt(Stmt.Var stmt) {
         Object value = null;
@@ -291,7 +314,13 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     @Override
     public Object visitAssignExpr(Expr.Assign expr) {
         Object value = evaluate(expr.value);
-        environment.assign(expr.name, value);
+        // 根据距离来找到环境和变量
+        Integer distance = locals.get(expr);
+        if (distance != null) {
+            environment.assignAt(distance, expr.name, value);
+        } else {
+            globals.assign(expr.name, value);
+        }
         return value;
     }
 

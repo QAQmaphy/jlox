@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 class Environment {
-//当前环境的父节点
+    // 当前环境的父节点
 
     final Environment enclosing;
 
@@ -18,19 +18,18 @@ class Environment {
         this.enclosing = enclosing;
     }
 
-    //获取到已有的值
+    // 获取到已有的值
     Object get(Token name) {
-        //先在当前的环境中寻找变量
+        // 先在当前的环境中寻找变量
         if (values.containsKey(name.lexeme)) {
             return values.get(name.lexeme);
         }
-        //如果当前环境中没有找到该变量,并且当前环境不是终点环境的话
+        // 如果当前环境中没有找到该变量,并且当前环境不是终点环境的话
         if (enclosing != null) {
-            //调用父节点的get来寻找变量
+            // 调用父节点的get来寻找变量
             return enclosing.get(name);
         }
         throw new RuntimeError(name, "Undefined variable '" + name.lexeme + "'.");
-
     }
 
     void assign(Token name, Object value) {
@@ -41,14 +40,31 @@ class Environment {
         if (enclosing != null) {
             enclosing.assign(name, value);
             return;
-
         }
         throw new RuntimeError(name, "Undefined variable '" + name.lexeme + "'.");
     }
 
-    //定义变量操作,讲一个名称与一个值进行绑定
+    // 定义变量操作,将一个名称与一个值进行绑定
     void define(String name, Object value) {
         values.put(name, value);
     }
 
+    // 该方法用于找到对应的环境
+    Environment ancestor(int distance) {
+        Environment environment = this;
+        for (int i = 0; i < distance; i++) {
+            environment = environment.enclosing;
+        }
+        return environment;
+    }
+
+    Object getAt(int distance, String name) {
+        // 找到环境后使用name来提取该环境中的变量
+        return ancestor(distance).values.get(name);
+    }
+
+    // 赋值语句找到对应的环境并将变量进行赋值
+    void assignAt(int distance, Token name, Object value) {
+        ancestor(distance).values.put(name.lexeme, value);
+    }
 }
