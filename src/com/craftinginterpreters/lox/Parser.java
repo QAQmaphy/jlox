@@ -22,6 +22,10 @@ class Parser {
 
     private Stmt declaration() {
         try {
+            if(match(CLASS))
+            {
+                return classDeclaration();
+            }
             if(match(FUN))
             {
                 return function("function");
@@ -34,6 +38,23 @@ class Parser {
             synchronize();
             return null;
         }
+    }
+    private Stmt classDeclaration(){
+        //处理类名
+        Token name = consume(IDENTIFIER,"Exprct calss name.");
+        //消耗掉左大括号,进入类的内部
+        consume (LEFT_BRACE,"Expect '{' before class body");
+        //创建一个列表用来存储内部的方法
+        List<Stmt.Function> methods = new ArrayList<>();
+        while (!check(RIGHT_BRACE) && !isAtEnd())
+        {   //调用function来不断获取到类里的方法
+            methods.add(function("method"));
+
+        }
+        //消费右大括号
+        consume(RIGHT_BRACE,"Exprct '}' after class body");
+        //将类名和方法打包成类进行返回
+        return new Stmt.Class(name, methods);
     }
 
     private Stmt statement() {

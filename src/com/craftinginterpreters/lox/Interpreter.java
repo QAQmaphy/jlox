@@ -238,6 +238,13 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         return null;
     }
 
+    @Override
+    public Void visitClassStmt(Stmt.Class stmt) {
+        environment.define(stmt.name.lexeme, null);
+        LoxClass klass = new LoxClass(stmt.name.lexeme);
+        return null;
+    }
+
     void executeBlock(List<Stmt> statements, Environment environment) {
         // 保存当前的环境
         Environment previous = this.environment;
