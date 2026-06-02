@@ -136,7 +136,7 @@ class Parser {
                         body,
                         new Stmt.Expression(increment)
                         )
-                    )
+                    );
         }
         //若条件表达式是null，表示这是一个死循环，直接设置为true
         if(condition ==null)condition = new Expr.Literal(true);
@@ -172,24 +172,18 @@ class Parser {
     }
 
     private Expr assignment() {
-
-        //这一步除了if里的东西之外,就是之前的东西
         Expr expr = equality();
         if (match(EQUAL)) {
             Token equals = previous();
-            //递归调用来保证右结合
             Expr value = assignment();
-            //判断是不是合法的可赋值左值
-
-            Token name = ((Expr.Variable) expr).name;
-            return new Expr.Assign(name, value);
-            //返回新的表达式节点,表示重新赋值
+            if (expr instanceof Expr.Variable) {
+                Token name = ((Expr.Variable) expr).name;
+                return new Expr.Assign(name, value);
+            }
+            error(equals, "Invalid assignment target.");
         }
-        error(equals, "Invalid assignment target.");
-
+        return expr;
     }
-    return expr;
-}
 
 private Stmt printStatement() {
     Expr value = expression();
@@ -197,7 +191,7 @@ private Stmt printStatement() {
     return new Stmt.Print(value);
 }
 
-private Stmt returnStatemnet()
+private Stmt returnStatement()
 {
     Token keyword = previous();
     Expr value = null;
@@ -231,7 +225,8 @@ private Stmt expressionStatement() {
 
 private Stmt.Function function(String kind)
 {
-    Token name = consume(IDENTIFIER,"Expect " + kind + " name.");
+    Token name = consume(IDENTIFIER, "Expect " + kind + " name.");
+    consume(LEFT_PAREN, "Expect '(' after " + kind + " name.");
     List<Token> parameters = new ArrayList<>();
 
     if(!check(RIGHT_PAREN))
@@ -315,7 +310,41 @@ private Expr unary() {
         Expr right = unary();
         return new Expr.Unary(operator, right);
     }
-    return primary();
+    return call();
+}
+
+private Expr call() {
+    Expr expr = primary();
+
+    while (true) {
+        if (match(LEFT_PAREN)) {
+            expr = finishCall(expr);
+        } else if (match(DOT)) {
+            Token name = consume(IDENTIFIER,"Expect property name after '.'.");
+            expr = new Expr.Get(expr,name);
+        }
+        else {
+            break;
+        }
+    }
+
+    return expr;
+}
+
+private Expr finishCall(Expr callee) {
+    List<Expr> arguments = new ArrayList<>();
+    if (!check(RIGHT_PAREN)) {
+        do {
+            if (arguments.size() >= 255) {
+                error(peek(), "Can't have more than 255 arguments.");
+            }
+            arguments.add(expression());
+        } while (match(COMMA));
+    }
+
+    Token paren = consume(RIGHT_PAREN, "Expect ')' after arguments.");
+
+    return new Expr.Call(callee, paren, arguments);
 }
 
 private Expr primary() {
