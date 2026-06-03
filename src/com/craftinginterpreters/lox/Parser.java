@@ -1,14 +1,15 @@
 package com.craftinginterpreters.lox;
 
 import static com.craftinginterpreters.lox.TokenType.*;
-import java.util.Arrays;
+
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 class Parser {
 
-    private static class ParseError extends RuntimeException {
-    }
+    private static class ParseError extends RuntimeException {}
+
     private final List<Token> tokens;
     private int current = 0;
 
@@ -22,12 +23,10 @@ class Parser {
 
     private Stmt declaration() {
         try {
-            if(match(CLASS))
-            {
+            if (match(CLASS)) {
                 return classDeclaration();
             }
-            if(match(FUN))
-            {
+            if (match(FUN)) {
                 return function("function");
             }
             if (match(VAR)) {
@@ -39,21 +38,20 @@ class Parser {
             return null;
         }
     }
-    private Stmt classDeclaration(){
-        //处理类名
-        Token name = consume(IDENTIFIER,"Exprct calss name.");
-        //消耗掉左大括号,进入类的内部
-        consume (LEFT_BRACE,"Expect '{' before class body");
-        //创建一个列表用来存储内部的方法
-        List<Stmt.Function> methods = new ArrayList<>();
-        while (!check(RIGHT_BRACE) && !isAtEnd())
-        {   //调用function来不断获取到类里的方法
-            methods.add(function("method"));
 
+    private Stmt classDeclaration() {
+        // 处理类名
+        Token name = consume(IDENTIFIER, "Exprct calss name.");
+        // 消耗掉左大括号,进入类的内部
+        consume(LEFT_BRACE, "Expect '{' before class body");
+        // 创建一个列表用来存储内部的方法
+        List<Stmt.Function> methods = new ArrayList<>();
+        while (!check(RIGHT_BRACE) && !isAtEnd()) { // 调用function来不断获取到类里的方法
+            methods.add(function("method"));
         }
-        //消费右大括号
-        consume(RIGHT_BRACE,"Exprct '}' after class body");
-        //将类名和方法打包成类进行返回
+        // 消费右大括号
+        consume(RIGHT_BRACE, "Exprct '}' after class body");
+        // 将类名和方法打包成类进行返回
         return new Stmt.Class(name, methods);
     }
 
@@ -61,19 +59,16 @@ class Parser {
         if (match(IF)) {
             return ifStatement();
         }
-        if(match(FOR))
-        {
+        if (match(FOR)) {
             return forStatement();
         }
         if (match(PRINT)) {
             return printStatement();
         }
-        if(match(RETURN))
-        {
+        if (match(RETURN)) {
             return returnStatement();
         }
-        if(match(WHILE))
-        {
+        if (match(WHILE)) {
             return whileStatement();
         }
         if (match(LEFT_BRACE)) {
@@ -82,79 +77,64 @@ class Parser {
         return expressionStatement();
     }
 
-    private Stmt whileStatement(){
-        consume(LEFT_PAREN,"Expect '(' after 'while'.");
+    private Stmt whileStatement() {
+        consume(LEFT_PAREN, "Expect '(' after 'while'.");
 
         Expr condition = expression();
 
-        consume (RIGHT_PAREN,"Expect ')' after condition.");
+        consume(RIGHT_PAREN, "Expect ')' after condition.");
 
         Stmt body = statement();
         return new Stmt.While(condition, body);
     }
-    private Stmt forStatement()
-    {
-        consume(LEFT_PAREN,"Expect '(' after 'for'.");
+
+    private Stmt forStatement() {
+        consume(LEFT_PAREN, "Expect '(' after 'for'.");
         Stmt initializer;
 
-        if(match(SEMICOLON))
-        {
+        if (match(SEMICOLON)) {
             initializer = null;
-        }
-        else if(match(VAR))
-        {
+        } else if (match(VAR)) {
             initializer = varDeclaration();
-        }
-        else {
+        } else {
             initializer = expressionStatement();
         }
 
         Expr condition = null;
 
-        if(!check(SEMICOLON))
-        {
+        if (!check(SEMICOLON)) {
             condition = expression();
         }
-        consume(SEMICOLON,"Expect ';' after loop condition");
+        consume(SEMICOLON, "Expect ';' after loop condition");
 
         Expr increment = null;
 
-        if(!check(RIGHT_PAREN))
-        {
+        if (!check(RIGHT_PAREN)) {
             increment = expression();
         }
-        consume(RIGHT_PAREN,"Expect ')' after for clause.");
+        consume(RIGHT_PAREN, "Expect ')' after for clause.");
 
         Stmt body = statement();
 
-        //先对递增语句进行处理，非空的话就将递归语句加在循环体的下面
-        //这样来构造出一个有递增条件的循环体。
-        if(increment != null)
-        {
-            body = new Stmt.Block(
-                    Arrays.asList(
-                        body,
-                        new Stmt.Expression(increment)
-                        )
-                    );
+        // 先对递增语句进行处理，非空的话就将递归语句加在循环体的下面
+        // 这样来构造出一个有递增条件的循环体。
+        if (increment != null) {
+            body = new Stmt.Block(Arrays.asList(body, new Stmt.Expression(increment)));
         }
-        //若条件表达式是null，表示这是一个死循环，直接设置为true
-        if(condition ==null)condition = new Expr.Literal(true);
+        // 若条件表达式是null，表示这是一个死循环，直接设置为true
+        if (condition == null) condition = new Expr.Literal(true);
 
-        //将条件表达式和循环体构造成一个while
+        // 将条件表达式和循环体构造成一个while
         body = new Stmt.While(condition, body);
-        //如果有初始化语句的话，就在while语句前执行一次
-        if(initializer !=null)
-        {
-            body = new Stmt.Block(Arrays.asList(initializer,body));
-
+        // 如果有初始化语句的话，就在while语句前执行一次
+        if (initializer != null) {
+            body = new Stmt.Block(Arrays.asList(initializer, body));
         }
         return body;
-
-
     }
+
     private Stmt ifStatement() {
-        //找后面的左括号
+        // 找后面的左括号
         consume(LEFT_PAREN, "Expect '(' after 'if'.");
 
         Expr condition = expression();
@@ -168,7 +148,6 @@ class Parser {
             elseBranch = statement();
         }
         return new Stmt.If(condition, thenBranch, elseBranch);
-
     }
 
     private Expr assignment() {
@@ -179,280 +158,272 @@ class Parser {
             if (expr instanceof Expr.Variable) {
                 Token name = ((Expr.Variable) expr).name;
                 return new Expr.Assign(name, value);
+            } else if (expr instanceof Expr.Get) {
+                Expr.Get get = (Expr.Get) expr;
+                return new Expr.Set(get.object, get.name, value);
             }
             error(equals, "Invalid assignment target.");
         }
         return expr;
     }
 
-private Stmt printStatement() {
-    Expr value = expression();
-    consume(SEMICOLON, "Expect ';' after value.");
-    return new Stmt.Print(value);
-}
-
-private Stmt returnStatement()
-{
-    Token keyword = previous();
-    Expr value = null;
-    if(!check(SEMICOLON))
-    {
-        value = expression();
-    }
-    consume(SEMICOLON,"Expect ';' after return value");
-    return new Stmt.Return(keyword,value);
-}
-private Stmt varDeclaration() {
-    //标识符(变量)的名字
-    Token name = consume(IDENTIFIER, "Expect variable name.");
-
-    Expr initializer = null;
-    //检测到=后,把后面表达式的值赋给表达式变量
-    if (match(EQUAL)) {
-        initializer = expression();
+    private Stmt printStatement() {
+        Expr value = expression();
+        consume(SEMICOLON, "Expect ';' after value.");
+        return new Stmt.Print(value);
     }
 
-    consume(SEMICOLON, "Expect ';' after variable declaration.");
-    //将该表达式和标识符进行绑定
-    return new Stmt.Var(name, initializer);
-}
-
-private Stmt expressionStatement() {
-    Expr expr = expression();
-    consume(SEMICOLON, "Expect ';' after expression.");
-    return new Stmt.Expression(expr);
-}
-
-private Stmt.Function function(String kind)
-{
-    Token name = consume(IDENTIFIER, "Expect " + kind + " name.");
-    consume(LEFT_PAREN, "Expect '(' after " + kind + " name.");
-    List<Token> parameters = new ArrayList<>();
-
-    if(!check(RIGHT_PAREN))
-    {
-        do{
-            if(parameters.size() >= 255)
-            {
-                error(peek(),"Can't have more than 255 parameters.");
-            }
-            parameters.add(
-                    consume(IDENTIFIER,"Expect parameter name")
-                    );
-        }while(match(COMMA));
-    }
-    consume(RIGHT_PAREN,"Expect ')' after parameters.");
-    consume(LEFT_BRACE,"Expect '{' before " + kind + "body.");
-    List<Stmt> body = block();
-    return new Stmt.Function(name,parameters,body);
-}
-
-private List<Stmt> block() {
-    List<Stmt> statements = new ArrayList<>();
-    while (!check(RIGHT_BRACE) && !isAtEnd()) {
-        statements.add(declaration());
-
-    }
-    consume(RIGHT_BRACE, "Expect '}' after block.");
-    return statements;
-}
-
-private Expr equality() {
-    Expr expr = comparison();
-
-    while (match(BANG_EQUAL, EQUAL_EQUAL)) {
-        Token operator = previous();
-        Expr right = comparison();
-
-        expr = new Expr.Binary(expr, operator, right);
-    }
-    return expr;
-}
-
-private Expr comparison() {
-    Expr expr = term();
-
-    while (match(GREATER, GREATER_EQUAL, LESS, LESS_EQUAL)) {
-        Token operator = previous();
-        Expr right = term();
-        expr = new Expr.Binary(expr, operator, right);
-
-    }
-    return expr;
-}
-
-private Expr term() {
-    Expr expr = factor();
-
-    while (match(MINUS, PLUS)) {
-        Token operator = previous();
-        Expr right = factor();
-        expr = new Expr.Binary(expr, operator, right);
-
-    }
-    return expr;
-}
-
-private Expr factor() {
-    Expr expr = unary();
-    while (match(SLASH, STAR)) {
-        Token operator = previous();
-        Expr right = unary();
-        expr = new Expr.Binary(expr, operator, right);
-    }
-
-    return expr;
-}
-
-private Expr unary() {
-    if (match(BANG, MINUS)) {
-        Token operator = previous();
-        Expr right = unary();
-        return new Expr.Unary(operator, right);
-    }
-    return call();
-}
-
-private Expr call() {
-    Expr expr = primary();
-
-    while (true) {
-        if (match(LEFT_PAREN)) {
-            expr = finishCall(expr);
-        } else if (match(DOT)) {
-            Token name = consume(IDENTIFIER,"Expect property name after '.'.");
-            expr = new Expr.Get(expr,name);
+    private Stmt returnStatement() {
+        Token keyword = previous();
+        Expr value = null;
+        if (!check(SEMICOLON)) {
+            value = expression();
         }
-        else {
-            break;
+        consume(SEMICOLON, "Expect ';' after return value");
+        return new Stmt.Return(keyword, value);
+    }
+
+    private Stmt varDeclaration() {
+        // 标识符(变量)的名字
+        Token name = consume(IDENTIFIER, "Expect variable name.");
+
+        Expr initializer = null;
+        // 检测到=后,把后面表达式的值赋给表达式变量
+        if (match(EQUAL)) {
+            initializer = expression();
         }
+
+        consume(SEMICOLON, "Expect ';' after variable declaration.");
+        // 将该表达式和标识符进行绑定
+        return new Stmt.Var(name, initializer);
     }
 
-    return expr;
-}
-
-private Expr finishCall(Expr callee) {
-    List<Expr> arguments = new ArrayList<>();
-    if (!check(RIGHT_PAREN)) {
-        do {
-            if (arguments.size() >= 255) {
-                error(peek(), "Can't have more than 255 arguments.");
-            }
-            arguments.add(expression());
-        } while (match(COMMA));
-    }
-
-    Token paren = consume(RIGHT_PAREN, "Expect ')' after arguments.");
-
-    return new Expr.Call(callee, paren, arguments);
-}
-
-private Expr primary() {
-    if (match(FALSE)) {
-        return new Expr.Literal(false);
-    }
-    if (match(TRUE)) {
-        return new Expr.Literal(true);
-    }
-    if (match(NIL)) {
-        return new Expr.Literal(null);
-    }
-
-    if (match(NUMBER, STRING)) {
-        return new Expr.Literal(previous().literal);
-    }
-    if (match(IDENTIFIER)) {
-        return new Expr.Variable(previous());
-    }
-    if (match(LEFT_PAREN)) {
+    private Stmt expressionStatement() {
         Expr expr = expression();
-        consume(RIGHT_PAREN, "Expect ')' after expression.");
-        return new Expr.Grouping(expr);
+        consume(SEMICOLON, "Expect ';' after expression.");
+        return new Stmt.Expression(expr);
     }
-    throw error(peek(), "Expect expression");
-}
 
-private boolean match(TokenType... types) {
-    for (TokenType type : types) {
-        if (check(type)) {
-            advance();
-            return true;
+    private Stmt.Function function(String kind) {
+        Token name = consume(IDENTIFIER, "Expect " + kind + " name.");
+        consume(LEFT_PAREN, "Expect '(' after " + kind + " name.");
+        List<Token> parameters = new ArrayList<>();
+
+        if (!check(RIGHT_PAREN)) {
+            do {
+                if (parameters.size() >= 255) {
+                    error(peek(), "Can't have more than 255 parameters.");
+                }
+                parameters.add(consume(IDENTIFIER, "Expect parameter name"));
+            } while (match(COMMA));
         }
+        consume(RIGHT_PAREN, "Expect ')' after parameters.");
+        consume(LEFT_BRACE, "Expect '{' before " + kind + "body.");
+        List<Stmt> body = block();
+        return new Stmt.Function(name, parameters, body);
     }
 
-    return false;
-}
-
-private Token consume(TokenType type, String message) {
-    if (check(type)) {
-        return advance();
+    private List<Stmt> block() {
+        List<Stmt> statements = new ArrayList<>();
+        while (!check(RIGHT_BRACE) && !isAtEnd()) {
+            statements.add(declaration());
+        }
+        consume(RIGHT_BRACE, "Expect '}' after block.");
+        return statements;
     }
-    throw error(peek(), message);
-}
 
-private boolean check(TokenType type) {
-    if (isAtEnd()) {
+    private Expr equality() {
+        Expr expr = comparison();
+
+        while (match(BANG_EQUAL, EQUAL_EQUAL)) {
+            Token operator = previous();
+            Expr right = comparison();
+
+            expr = new Expr.Binary(expr, operator, right);
+        }
+        return expr;
+    }
+
+    private Expr comparison() {
+        Expr expr = term();
+
+        while (match(GREATER, GREATER_EQUAL, LESS, LESS_EQUAL)) {
+            Token operator = previous();
+            Expr right = term();
+            expr = new Expr.Binary(expr, operator, right);
+        }
+        return expr;
+    }
+
+    private Expr term() {
+        Expr expr = factor();
+
+        while (match(MINUS, PLUS)) {
+            Token operator = previous();
+            Expr right = factor();
+            expr = new Expr.Binary(expr, operator, right);
+        }
+        return expr;
+    }
+
+    private Expr factor() {
+        Expr expr = unary();
+        while (match(SLASH, STAR)) {
+            Token operator = previous();
+            Expr right = unary();
+            expr = new Expr.Binary(expr, operator, right);
+        }
+
+        return expr;
+    }
+
+    private Expr unary() {
+        if (match(BANG, MINUS)) {
+            Token operator = previous();
+            Expr right = unary();
+            return new Expr.Unary(operator, right);
+        }
+        return call();
+    }
+
+    private Expr call() {
+        Expr expr = primary();
+
+        while (true) {
+            if (match(LEFT_PAREN)) {
+                expr = finishCall(expr);
+            } else if (match(DOT)) {
+                Token name = consume(IDENTIFIER, "Expect property name after '.'.");
+                expr = new Expr.Get(expr, name);
+            } else {
+                break;
+            }
+        }
+
+        return expr;
+    }
+
+    private Expr finishCall(Expr callee) {
+        List<Expr> arguments = new ArrayList<>();
+        if (!check(RIGHT_PAREN)) {
+            do {
+                if (arguments.size() >= 255) {
+                    error(peek(), "Can't have more than 255 arguments.");
+                }
+                arguments.add(expression());
+            } while (match(COMMA));
+        }
+
+        Token paren = consume(RIGHT_PAREN, "Expect ')' after arguments.");
+
+        return new Expr.Call(callee, paren, arguments);
+    }
+
+    private Expr primary() {
+        if (match(FALSE)) {
+            return new Expr.Literal(false);
+        }
+        if (match(TRUE)) {
+            return new Expr.Literal(true);
+        }
+        if (match(NIL)) {
+            return new Expr.Literal(null);
+        }
+
+        if (match(NUMBER, STRING)) {
+            return new Expr.Literal(previous().literal);
+        }
+        if (match(IDENTIFIER)) {
+            return new Expr.Variable(previous());
+        }
+        if (match(LEFT_PAREN)) {
+            Expr expr = expression();
+            consume(RIGHT_PAREN, "Expect ')' after expression.");
+            return new Expr.Grouping(expr);
+        }
+        throw error(peek(), "Expect expression");
+    }
+
+    private boolean match(TokenType... types) {
+        for (TokenType type : types) {
+            if (check(type)) {
+                advance();
+                return true;
+            }
+        }
+
         return false;
     }
-    return peek().type == type;
-}
 
-private boolean isAtEnd() {
-    return peek().type == EOF;
-}
-
-private Token advance() {
-    if (!isAtEnd()) {
-        current++;
-    }
-    return previous();
-}
-
-private Token peek() {
-    return tokens.get(current);
-}
-
-private Token previous() {
-    return tokens.get(current - 1);
-}
-
-private ParseError error(Token token, String message) {
-    Lox.error(token, message);
-    return new ParseError();
-}
-
-private void synchronize() {
-    //先消费掉一个token
-    advance();
-
-    //不断进行循环来消费接下来的token,直到同步点
-    while (!isAtEnd()) {
-        if (previous().type == SEMICOLON) {
-            return;
+    private Token consume(TokenType type, String message) {
+        if (check(type)) {
+            return advance();
         }
+        throw error(peek(), message);
+    }
 
-        switch (peek().type) {
-            case CLASS, FUN, VAR, IF, WHILE, PRINT, RETURN -> {
+    private boolean check(TokenType type) {
+        if (isAtEnd()) {
+            return false;
+        }
+        return peek().type == type;
+    }
+
+    private boolean isAtEnd() {
+        return peek().type == EOF;
+    }
+
+    private Token advance() {
+        if (!isAtEnd()) {
+            current++;
+        }
+        return previous();
+    }
+
+    private Token peek() {
+        return tokens.get(current);
+    }
+
+    private Token previous() {
+        return tokens.get(current - 1);
+    }
+
+    private ParseError error(Token token, String message) {
+        Lox.error(token, message);
+        return new ParseError();
+    }
+
+    private void synchronize() {
+        // 先消费掉一个token
+        advance();
+
+        // 不断进行循环来消费接下来的token,直到同步点
+        while (!isAtEnd()) {
+            if (previous().type == SEMICOLON) {
                 return;
             }
 
+            switch (peek().type) {
+                case CLASS, FUN, VAR, IF, WHILE, PRINT, RETURN -> {
+                    return;
+                }
+            }
+
+            advance();
         }
-
-        advance();
     }
-}
-//这里正式调用解析器,在一个循环中不断地将解析出的语句填入到一个语句列表中,在解析的过程中会
-//有这些情况:1.判断出了var赋值语句,将标识符进行消费,然后匹配一个等号,然后继续将后面的表达式的值求出来,
-//消费掉最后的分号;,用标识符和后面的表达式节点构造一个赋值语句节点
-//2.判断到了print,大体上和1的情况类似
-//3.不是上面两种情况,说明是一个表达式,直接解析出一个表达式
 
-List<Stmt> parse() {
-    List<Stmt> statements = new ArrayList<>();
-    while (!isAtEnd()) {
-        statements.add(declaration());
+    // 这里正式调用解析器,在一个循环中不断地将解析出的语句填入到一个语句列表中,在解析的过程中会
+    // 有这些情况:1.判断出了var赋值语句,将标识符进行消费,然后匹配一个等号,然后继续将后面的表达式的值求出来,
+    // 消费掉最后的分号;,用标识符和后面的表达式节点构造一个赋值语句节点
+    // 2.判断到了print,大体上和1的情况类似
+    // 3.不是上面两种情况,说明是一个表达式,直接解析出一个表达式
 
+    List<Stmt> parse() {
+        List<Stmt> statements = new ArrayList<>();
+        while (!isAtEnd()) {
+            statements.add(declaration());
+        }
+        return statements;
     }
-    return statements;
-}
 }

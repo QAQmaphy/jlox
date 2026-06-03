@@ -25,6 +25,7 @@ public class GenerateAst {
                         "Literal  : Object value",
                         "Unary    : Token operator, Expr right",
                         "Logical  : Expr left, Token operator, Expr right",
+                        "Set      : Expr object, Token name, Expr value",
                         "Variable : Token name",
                         "Assign   : Token name , Expr value"));
 
@@ -40,8 +41,7 @@ public class GenerateAst {
                         "Var        : Token name, Expr initializer",
                         "While      : Expr condition, Stmt body",
                         "Block      : List<Stmt> statements",
-                        "Class      : Token name, List<Stmt.Function> methods"
-                        ));
+                        "Class      : Token name, List<Stmt.Function> methods"));
     }
 
     private static void defineAst(String outputDir, String baseName, List<String> types)
