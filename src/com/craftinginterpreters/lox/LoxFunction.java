@@ -2,7 +2,6 @@ package com.craftinginterpreters.lox;
 
 import java.util.List;
 
-
 class LoxFunction implements LoxCallable {
     private final Stmt.Function declaration;
     private final Environment closure;
@@ -12,14 +11,19 @@ class LoxFunction implements LoxCallable {
         this.closure = closure;
     }
 
+    LoxFunction bind(LoxInstance instance) {
+        Ecvironment environment = new Environment(closure);
+        environment.define("this", instance);
+        return new LoxFunction(declaration, environment);
+    }
+
     @Override
     public int arity() {
         return declaration.params.size();
     }
 
     @Override
-    public Object call(Interpreter interpreter,
-                       List<Object> arguments) {
+    public Object call(Interpreter interpreter, List<Object> arguments) {
         Environment environment = new Environment(closure);
         for (int i = 0; i < declaration.params.size(); i++) {
             environment.define(declaration.params.get(i).lexeme, arguments.get(i));

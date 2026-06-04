@@ -25,6 +25,14 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         METHOD
     }
 
+    private enum ClassType {
+        NONE,
+        CLASS
+    }
+
+    // 默认是不在类里的环境
+    private ClassType currentClass = ClassType.NONE;
+
     @Override
     public Void visitBlockStmt(Stmt.Block stmt) {
         beginScope();
@@ -35,13 +43,22 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitClassStmt(Stmt.Class stmt) {
+        // 保存旧环境
+        Classtype enclosingClass = currentClass;
+        // 将当前的环境改为类内环境
+        currentClass = ClassType.Class;
         // 立即进行声明和定义,保证在环境里可用
         declare(stmt.name);
         define(stmt.name);
+        beginScope();
+        scopes.peek().put("this", true);
         for (Stmt.Function method : stmt.methods) {
             FunctionType declaration = FunctionType.METHOD;
             resolveFunction(method, declaration);
         }
+        endScope();
+        // 恢复环境
+        currentClass = enclosingClass;
         return null;
     }
 
@@ -155,6 +172,16 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     public Void visitSetExpr(Expr.Set expr) {
         resolve(expr.value);
         resolve(expr.object);
+        return null;
+    }
+
+    @Override
+    public Void visitThisExpr(Expr.This expr) {
+        if (currnttClass == ClassType.NONE) {
+            Lox.error(expr.keyword, "Can't use 'this' outside of a class");
+            return null;
+        }
+        resolveLocal(expr, expr.keyword);
         return null;
     }
 
