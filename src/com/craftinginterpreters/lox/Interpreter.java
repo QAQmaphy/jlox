@@ -80,8 +80,8 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         return value;
     }
 
-    @Overridepublic
-    Object visitThisExpr(Expr.This expr) {
+    @Override
+    public Object visitThisExpr(Expr.This expr) {
         return lookUpVariable(expr.keyword, expr);
     }
 
@@ -168,8 +168,8 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
                 if (left instanceof Double && right instanceof Double) {
                     return (double) left + (double) right;
                 }
-                if (left instanceof String && right instanceof String) {
-                    return (String) left + (String) right;
+                if (left instanceof String || right instanceof String) {
+                    return stringify(left) + stringify(right);
                 }
                 throw new RuntimeError(
                         expr.operator, "Operands must be two numbers or two strings");
@@ -257,6 +257,10 @@ class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     void resolve(Expr expr, int depth) {
         locals.put(expr, depth);
+    }
+
+    Map<Expr, Integer> getLocals() {
+        return locals;
     }
 
     @Override

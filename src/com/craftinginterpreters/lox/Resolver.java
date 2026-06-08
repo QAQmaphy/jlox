@@ -44,9 +44,9 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     @Override
     public Void visitClassStmt(Stmt.Class stmt) {
         // 保存旧环境
-        Classtype enclosingClass = currentClass;
+        ClassType enclosingClass = currentClass;
         // 将当前的环境改为类内环境
-        currentClass = ClassType.Class;
+        currentClass = ClassType.CLASS;
         // 立即进行声明和定义,保证在环境里可用
         declare(stmt.name);
         define(stmt.name);
@@ -177,7 +177,7 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitThisExpr(Expr.This expr) {
-        if (currnttClass == ClassType.NONE) {
+        if (currentClass == ClassType.NONE) {
             Lox.error(expr.keyword, "Can't use 'this' outside of a class");
             return null;
         }

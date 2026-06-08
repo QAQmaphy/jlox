@@ -1,0 +1,48 @@
+// ── 答辩演示脚本：展示 jlox 各语言特性 ──────────────────────
+// 涵盖：变量、控制流、函数、闭包、类、继承概念等
+
+var PI = 3.14159;
+
+// 递归函数
+fun fib(n) {
+  if (n <= 1) return n;
+  return fib(n - 1) + fib(n - 2);
+}
+
+print "fib(10) = " + fib(10);
+
+// 闭包示例
+fun makeCounter() {
+  var count = 0;
+  fun counter() {
+    count = count + 1;
+    return count;
+  }
+  return counter;
+}
+
+var counter = makeCounter();
+for (var i = 0; i < 3; i = i + 1) {
+  print "count = " + counter();
+}
+
+// 类示例 — 方法访问与 this
+class Calculator {
+  add(a, b) {
+    return a + b;
+  }
+
+  square(x) {
+    return x * x;
+  }
+}
+
+var calc = Calculator();
+print "calc.add(3, 5) = " + calc.add(3, 5);
+print "calc.square(7) = " + calc.square(7);
+
+// 逻辑运算符
+var a = true;
+var b = false;
+print a and !b;  // true
+print a or b;    // true
