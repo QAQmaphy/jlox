@@ -42,7 +42,8 @@ public class GenerateAst {
                         "Var        : Token name, Expr initializer",
                         "While      : Expr condition, Stmt body",
                         "Block      : List<Stmt> statements",
-                        "Class      : Token name, List<Stmt.Function> methods"));
+                        "Class      : Token name, Expr.Variable superclass,"
+                                + " List<Stmt.Function> methods"));
     }
 
     private static void defineAst(String outputDir, String baseName, List<String> types)

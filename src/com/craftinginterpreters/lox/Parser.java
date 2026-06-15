@@ -42,6 +42,13 @@ class Parser {
     private Stmt classDeclaration() {
         // 处理类名
         Token name = consume(IDENTIFIER, "Exprct calss name.");
+
+        // 超类，使用小于号< 来作为标志
+        Expr.Variable superclass = null;
+        if (match(LESS)) {
+            consume(IDENTIFIER, "Exprct superclass name.");
+            superclass = new Expr.Variable(previous());
+        }
         // 消耗掉左大括号,进入类的内部
         consume(LEFT_BRACE, "Expect '{' before class body");
         // 创建一个列表用来存储内部的方法
@@ -52,7 +59,7 @@ class Parser {
         // 消费右大括号
         consume(RIGHT_BRACE, "Exprct '}' after class body");
         // 将类名和方法打包成类进行返回
-        return new Stmt.Class(name, methods);
+        return new Stmt.Class(name, superclass, methods);
     }
 
     private Stmt statement() {
